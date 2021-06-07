@@ -146,7 +146,7 @@ In reality, using the watchdog to its full potential could introduce additional 
 The watchdog’s implementation looks like this. Note that new is unsafe, but disable is safe.
 
 ```rust
-use core::arch::arm::__NOP;
+use core::arch::arm::__nop;
 
 impl Watchdog {
     pub unsafe fn new() -> &'static mut Watchdog {
@@ -160,3 +160,182 @@ impl Watchdog {
     }
 }
 ```
+
+The disable function is following the procedure set forth in the manufacturer’s data sheet. The watchdog is protected against being accidentally disabled by a random write to memory, so our code must “unlock” it first, by writing special values to the unlock register. Once that’s done, we need to wait for the watchdog to actually unlock itself. The `_nop` function tells the processor to briefly do nothing. This introduces our necessary 2-cycle delay. Finally, we read the control register and un-set the “enable” bit.
+
+All of our memory access are volatile. This tells the Rust compiler that the read (or write) has an effect that it can’t see from our program code. In this case, that effect is a hardware access. Without marking our memory accesses volatile, the Rust compiler would be free to say “You never read from unlock, so I will optimize away the unneeded write to it”. This would, naturally, cause our code to fail.
+
+This disable process shows why we must have only one mutable reference to the watchdog. If an interrupt were to occur partway through this function and write to the watchdog, our attempt to disable it would fail. Knowing that an interrupt cannot change watchdog settings gives us confidence that this code will execute as we expect.
+
+### Clock Gating
+
+The other piece of hardware involved in the microcontroller setup is the System Integration Module. We’ll use this to enable the appropriate clock gate to enable our I/O port. Just like the watchdog, the SIM is controlled through a block of memory, which also will be represent as a struct. It has the same basic memory safety rules as the watchdog does, and for now has no extra memory-safety invariants.
+
+There is a potential correctness issue involved with the SIM - it’s possible to use a mutable reference to the SIM to disable a hardware function that another section of code relies on. We can design an API that keeps better track of which functional units are needed, but we will save that for a future post. For now, we’ll just have to trust ourselves.
+
+The complete code for src/sim.rs is here:
+
+```rust
+use core;
+
+#[derive(Clone,Copy)]
+pub enum Clock {
+    PortC,
+}
+
+#[repr(C,packed)]
+pub struct Sim {
+    // Complete code here
+    // See section 12.2 of the teensy manual for the register sizes and memory locations.
+}
+
+impl Sim {
+    pub unsafe fn new() -> &'static mut Sim {
+        // Complete code here (similar to watchdog)
+    }
+
+    pub fn enable_clock(&mut self, clock: Clock) {
+        unsafe {
+            match clock {
+                Clock::PortC => {
+                    // Use the teensy manual to find out which register controls PortC and what values neeeds to be written to that register to enable port C. Then implement this function to enable port C.
+                }
+            }
+        }
+    }
+}
+```
+
+The simple match-based clock management we have here would get unwieldy pretty quickly if we intended to use it to manage a large number of hardware functions. We’ll get rid of it when we look in to more robust ways to manage clock gates.
+
+## I/O Ports
+
+With the initial hardware setup out of the way, we can turn our attention to achieving that led blink that we’ve been working towards. We will put a pin into GPIO mode, and use it to turn on the LED. GPIO stands for “General Purpose I/O”. When a pin is in GPIO mode, software has control over the high/low state of an output pin and direct read access to the state of an input pin. This is in contrast to the pin being controlled by a dedicated hardware function, such as a serial port.
+
+Pins are grouped into ports, and all of a pin’s settings are controlled from the port’s register block. This poses a bit of a challenge for us. We’d like each pin to be a self-contained struct, so that ownership of it can be passed from one software module to another, and only the owning module can mutate its pins. This follows Rust’s one-owner rule for pins, but would require that each pin be able to mutate its settings in the Port register block. We all know how Rust feels about shared mutable state.
+
+Fortunately, each pin has a separate control register in the port’s block. That means there’s no actual overlap of memory locations that might be written. We’ll take advantage of this to write some very, very careful unsafe code that allows each pin instance to modify its own control settings.
+
+We’ll start out with a port implementation in src/port.rs.
+
+```rust
+use core;
+
+#[derive(Clone,Copy)]
+pub enum PortName {
+    C
+}
+
+#[repr(C,packed)]
+pub struct Port {
+    // Complete the struct below
+}
+
+impl Port {
+    pub unsafe fn new(name: PortName) -> &'static mut Port {
+        // Complete the function below.
+    }
+
+    pub unsafe fn set_pin_mode(&mut self, p: usize, mut mode: u32) {
+        let mut pcr = core::ptr::read_volatile(&self.pcr[p]);
+        pcr &= 0xFFFFF8FF;
+        mode &= 0x00000007;
+        mode <<= 8;
+        pcr |= mode;
+        core::ptr::write_volatile(&mut self.pcr[p], pcr);
+    }
+}
+```
+
+The set_pin_mode function is responsible for switching a single pin into GPIO (or any other) mode. The only memory it touches is the PCR associated with a single pin, and is unsafe to call. It’s unsafety is because calling it for a pin that you do not own could cause a race condition. An interrupt that changes a PCR between the read and write in this function could have its changes overwritten.
+
+The pin struct is next on our list. A pin is not a reference to any particular register. Instead, it is a concept in our code that represents a piece of a port. It will have a mutable reference to its containing port, as well as an integer representing which index in the PCR array it is associated with.
+
+In order for this mutable port reference to be safe, Pin instances must only call methods of Port that affect the correct PCR. We can’t really enforce this, but to encourage it, Pin’s Port reference will actually be a pointer. This makes it impossible to call Port methods without an unsafe block, and reinforces the peculiarity of this arrangement.
+
+```rust
+pub struct Pin {
+    port: *mut Port,
+    pin: usize
+}
+
+impl Port {
+    pub unsafe fn pin(&mut self, p: usize) -> Pin {
+        // Complete
+    }
+}
+```
+
+### GPIO and the Bit-Band
+
+There are two ways to access the GPIO registers. The first is through a block of 32-bit registers, associated with a port. Second way will be discussed later.
+
+```rust
+#[repr(C,packed)]
+struct GpioBitBand {
+    // Complete using section 49.2
+}
+```
+
+This is what we will use to control the GPIO. Just like with Pins and the PCR registers, we will have individual GPIO structures that represent a single GPIO pin. They will ensure safety by only writing to the register words associated with their pin index. Let’s look at all that code now, then walk through it.
+
+```rust
+pub struct Gpio {
+    gpio: *mut GpioBitband,
+    pin: usize
+}
+
+impl Port {
+    pub fn name(&self) -> PortName {
+        let addr = (self as *const Port) as u32;
+        match addr {
+            // Return PortName::C if the address matches the starting address of port C as specified in section 11.1.4
+        }
+    }
+}
+
+impl Pin {
+    pub fn make_gpio(self) -> Gpio {
+        unsafe {
+            let port = &mut *self.port;
+            port.set_pin_mode(self.pin, 1);
+            Gpio::new(port.name(), self.pin)
+        }
+    }
+}
+
+impl Gpio {
+    pub unsafe fn new(port: PortName, pin: usize) -> Gpio {
+        let gpio = match port {
+            PortName::C => 0x43FE1000 as *mut GpioBitband
+        };
+
+        Gpio { gpio, pin }
+    }
+
+    pub fn output(&mut self) {
+        unsafe {
+            core::ptr::write_volatile(&mut (*self.gpio).pddr[self.pin], 1);
+        }
+    }
+
+    pub fn high(&mut self) {
+        unsafe {
+            core::ptr::write_volatile(&mut (*self.gpio).psor[self.pin], 1);
+        }
+    }
+}
+```
+
+The Gpio struct, just like the Port struct, holds a pointer to the shared data block, as well as an index of its pin number. It has two functions: one to set itself as an output, and one to set its output value to high. Thanks to the bit-band, these functions can be implemented with a single write, eliminating the potential race condition that a read-modify-write of a shared memory address would create.
+
+Converting a Pin into a Gpio consumes the Pin. This prevents having more than one reference to a single hardware pin. Getting another copy of a pin from the port is unsafe, so we can be confident that safe code will never make a second copy of a pin that is in use as a GPIO
+
+## Putting it Together
+
+We now have all the pieces for our first program. Going back to the beginning, our application will do the following:
+
+- disable the watchdog
+- turn on the clock gate for Port C
+- grab pin 5 from that port, and make it a GPIO
+- set that GPIO high to light the LED
