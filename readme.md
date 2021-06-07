@@ -124,7 +124,7 @@ Our program now contains the important data tables, as well as a `main` that can
 Accessing The Hardware
 Our first steps here will be some basic hardware initialization tasks. We’ll build accessors for the watchdog and for the System Integration Module, or SIM. The SIM handles clock gating as well as most other global configuration of the microcontroller. Once we have those in place, we’ll turn to the I/O functions necessary to turn on the LED.
 
-## Registers
+### Registers
 
 Read [here](http://www.mathcs.emory.edu/~cheung/Courses/255/Syllabus/2-C-adv-data/struct-pointer.html) about pointers and structs in C before moving ahead.
 
@@ -149,7 +149,13 @@ ptr->register2 = 0;
 
 If you do not understand the above, do not move ahead, instead ask on discord channel.
 
-## Disabling the Watchdog
+### Pointers in Rust
+
+Reading Pointer : http://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/core/ptr/fn.read_volatile.html
+
+Writing Pointer : http://web.mit.edu/rust-lang_v1.25/arch/amd64_ubuntu1404/share/doc/rust/html/core/ptr/fn.write_volatile.html
+
+### Disabling the Watchdog
 
 The first bit of hardware setup we’ll do is disabling the watchdog. The watchdog’s control is done through a series of 12 16-bit registers at address `0x40052000`. This can be represented in Rust as a packed structure
 
@@ -239,7 +245,7 @@ impl Sim {
 
 The simple match-based clock management we have here would get unwieldy pretty quickly if we intended to use it to manage a large number of hardware functions. We’ll get rid of it when we look in to more robust ways to manage clock gates.
 
-## I/O Ports
+### I/O Ports
 
 With the initial hardware setup out of the way, we can turn our attention to achieving that led blink that we’ve been working towards. We will put a pin into GPIO mode, and use it to turn on the LED. GPIO stands for “General Purpose I/O”. When a pin is in GPIO mode, software has control over the high/low state of an output pin and direct read access to the state of an input pin. This is in contrast to the pin being controlled by a dedicated hardware function, such as a serial port.
 
