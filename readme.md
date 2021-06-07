@@ -1,6 +1,6 @@
 # Introduction
 
-The Teensy family is a set inexpensive embedded development boards, originally designed to be programmed using the Arduino environment. The Teensy 3.2 that we’ll be targeting is based on a Freescale (NXP) MK20DX256 ARM Cortex-M4 microcontroller.
+The Teensy family is a set inexpensive embedded development boards, originally designed to be programmed using the Arduino environment. The Teensy 3.2 that we’ll be targeting is based on a Freescale (NXP) MK20DX256 ARM Cortex-M4 microcontroller. Teensy is the most simplest IC, making it easy to understand important concepts. The manual can be find [here](https://www.pjrc.com/teensy/K20P64M72SF1RM.pdf).
 
 This tutorial is written mostly for Linux; specifically Arch. You may have to adjust commands for other OSes, or even for other Linux distros. If anything is broken for you, please feel free to ask on discord.
 
@@ -147,6 +147,8 @@ ptr->register1 = 3; // 10 in integer representation is 3
 ptr->register2 = 0;
 ```
 
+If you do not understand the above, do not move ahead, instead ask on discord channel.
+
 ## Disabling the Watchdog
 
 The first bit of hardware setup we’ll do is disabling the watchdog. The watchdog’s control is done through a series of 12 16-bit registers at address `0x40052000`. This can be represented in Rust as a packed structure
@@ -156,7 +158,7 @@ The first bit of hardware setup we’ll do is disabling the watchdog. The watchd
 pub struct Watchdog {
     stctrlh: u16,
     stctrll: u16,
-    // Complete the rest of the registers here.
+    // Complete the rest of the registers here using section 23.7 of the manual.
 }
 ```
 
@@ -175,12 +177,15 @@ use core::arch::arm::__nop;
 
 impl Watchdog {
     pub unsafe fn new() -> &'static mut Watchdog {
+        // You can see the starting address in section 23.7 of the manual i.e. 4005_2000.
         &mut *(0x40052000 as *mut Watchdog)
     }
 
     pub fn disable(&mut self) {
         unsafe {
-            // disable the watchodg
+            // Disable the watchdog. This has 2 parts, unlocking the watchdog for modification and then disabling the watchdog.
+            // See section 23.3.1 for unlocking the watchdog. Ignore point 3 there.
+            // To disable the watchdog, see section 23.7.1 and scroll down to the last item in the table the 0th bit to understand how to disable the watchdog. This makes it clear that your operation should only change the 0th bit in the 16-bit value, keeping others same. How would you do that? (Think XOR,AND,OR etc.)
         }
     }
 }
@@ -211,19 +216,20 @@ pub enum Clock {
 #[repr(C,packed)]
 pub struct Sim {
     // Complete code here
-    // See section 12.2 of the teensy manual for the register sizes and memory locations.
+    // See section 12.2 of the teensy manual for the register sizes and memory locations and do similar to the watchdog struct.
+    // Note that there are some empty bits between some registers and they are not continous, how do we resolve that ? Padding, eh ?
 }
 
 impl Sim {
     pub unsafe fn new() -> &'static mut Sim {
-        // Complete code here (similar to watchdog)
+        // Complete code here (similar to watchdog), see memory location from section 12.2
     }
 
     pub fn enable_clock(&mut self, clock: Clock) {
         unsafe {
             match clock {
                 Clock::PortC => {
-                    // Use the teensy manual to find out which register controls PortC and what values neeeds to be written to that register to enable port C. Then implement this function to enable port C.
+                    // Use the teensy manual to find out which register controls Port C. Then implement this function to enable port C. Scroll through section 12.2 to find which bit of which register needs to be changed to enable clock gate to Port C. Note that all other bits of that register must remain unchanged.
                 }
             }
         }
@@ -253,16 +259,16 @@ pub enum PortName {
 
 #[repr(C,packed)]
 pub struct Port {
-    // Complete the struct below
+    // Complete the struct below. See section 11.1.4 of the manual. Note it has continous memory representation of multiple ports but struct should only account for port C i.e. all registers beginning with PORTC_.
 }
 
 impl Port {
     pub unsafe fn new(name: PortName) -> &'static mut Port {
-        // Complete the function below.
+        // Complete the function below. Similar to watchdog. But use a matchcase since we should only return when portname is C. See the address in section 11.1.4.
     }
 
     pub unsafe fn set_pin_mode(&mut self, p: usize, mut mode: u32) {
-        // Given the pin mode as a 32 bit value set the register bytes to the same value for the corresponding pin.
+        // Given the pin mode as a 32 bit value set the register bytes to the same value for the corresponding pin. See the MUX(10-8) bits in section 11.14.1. We need to set only those bits. Again think of appropriate operations using AND,OR,XOR etc.. There are only 8 possible pin models so mode = 0 to 7. Reject if different.
     }
 }
 ```
@@ -309,7 +315,7 @@ impl Port {
     pub fn name(&self) -> PortName {
         let addr = (self as *const Port) as u32;
         match addr {
-            // Return PortName::C if the address matches the starting address of port C as specified in section 11.1.4
+            // Return PortName::C if the address matches the starting address of port C as specified in section 11.1.4. Reject if address is wrong and return error.
         }
     }
 }
@@ -317,7 +323,7 @@ impl Port {
 impl Pin {
     pub fn make_gpio(self) -> Gpio {
         unsafe {
-            // Set pin mode to 1 to enable gpio mode.
+            // Set pin mode to 1 to enable gpio mode (section 11.14.1 MUX bits).
             // Consume the pin into a gpio struct i.e. instantitate a gpio struct using the new function below.
         }
     }
@@ -350,7 +356,7 @@ impl Gpio {
 
 The Gpio struct, just like the Port struct, holds a pointer to the shared data block, as well as an index of its pin number. It has two functions: one to set itself as an output, and one to set its output value to high. Thanks to the bit-band, these functions can be implemented with a single write, eliminating the potential race condition that a read-modify-write of a shared memory address would create.
 
-Converting a Pin into a Gpio consumes the Pin. This prevents having more than one reference to a single hardware pin. Getting another copy of a pin from the port is unsafe, so we can be confident that safe code will never make a second copy of a pin that is in use as a GPIO
+Converting a Pin into a Gpio consumes the Pin. This prevents having more than one reference to a single hardware pin. Getting another copy of a pin from the port is unsafe, so we can be confident that safe code will never make a second copy of a pin that is in use as a GPIO.
 
 ## Putting it Together
 
@@ -362,4 +368,4 @@ We now have all the pieces for our first program. Going back to the beginning, o
 - set that GPIO as output and then high to light the LED
 - Can you make the led blink periodically?
 
-You are now suppossed to complete main.rs.
+You are now suppossed to complete main.rs to do the above tasks.

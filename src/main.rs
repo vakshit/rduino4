@@ -11,6 +11,7 @@ mod sim;
 mod watchdog;
 
 extern "C" fn main() {
+    // Complete main function here
     loop {}
 }
 
@@ -21,9 +22,6 @@ extern "C" {
 #[link_section = ".vectors"]
 #[no_mangle]
 pub static _VECTORS: [unsafe extern "C" fn(); 2] = [_stack_top, main];
-
-const FSEC: u8 = 0xDE;
-const FOPT: u8 = 0xF9;
 
 #[link_section = ".flashconfig"]
 #[no_mangle]
