@@ -21,4 +21,11 @@ namespace core
     {
         std::cout << "Stopping for 1 clock cycle!";
     }
+
+    template <typename T>
+    T newObject(size_t address)
+    {
+        auto *ptr = new T(address);
+        return ptr;
+    }
 } // namespace core

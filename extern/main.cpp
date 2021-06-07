@@ -8,6 +8,15 @@ core::RAM _RAM;
 
 struct WatchDog
 {
+    size_t address;
+    WatchDog() : address(address){};
     u16 stctrlh;
     u16 stctrll;
+
+    void Disable(){};
 };
+
+int main()
+{
+    auto x = core::newObject<WatchDog>(0x00);
+}

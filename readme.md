@@ -2,7 +2,7 @@
 
 The Teensy family is a set inexpensive embedded development boards, originally designed to be programmed using the Arduino environment. The Teensy 3.2 that we’ll be targeting is based on a Freescale (NXP) MK20DX256 ARM Cortex-M4 microcontroller. Teensy is the most simplest IC, making it easy to understand important concepts. The manual can be find [here](https://www.pjrc.com/teensy/K20P64M72SF1RM.pdf).
 
-This tutorial is written mostly for Linux; specifically Arch. You may have to adjust commands for other OSes, or even for other Linux distros. If anything is broken for you, please feel free to ask on discord.
+This tutorial is written mostly for Linux; specifically Debian. You may have to adjust commands for other OSes, or even for other Linux distros. If anything is broken for you, please feel free to ask on discord.
 
 ## A Short Introduction to Embedded Programming
 
@@ -10,7 +10,7 @@ Unlike with typical desktop or server applications, embedded programs do not hav
 
 Memory mapping is assigning a special memory address which, when read from or written to, interacts with a hardware device instead of RAM. For example, address `0x4006A007` is the UART Data Register _(see below)_. Writing a byte to this address will cause that data to be sent across the serial port.
 
-Writing to arbitrary memory addresses requires unsafe Rust. One of our goals through this series will be to use Rust’s language features to create safe interfaces for these unsafe memory accesses. If you would have read chapter 19 by now, unsafe should be fammiliar to you. Please refer to the resources for understanding about some embedded programming terms. **Note that we only need a basic idea about them and not the full knowledge**.`
+Writing to arbitrary memory addresses requires unsafe Rust. One of our goals will be to use Rust’s language features to create safe interfaces for these unsafe memory accesses. If you would have read chapter 19 by now, unsafe should be fammiliar to you. Please refer to the resources for understanding about some embedded programming terms. **Note that we only need a basic idea about them and not the full knowledge**.`
 
 | Topic                           | Resource                                                                                                                       | Comments |
 | ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
@@ -77,7 +77,8 @@ The first line enables the use of intrinsics, and is the reason we need nightly 
 
 Lastly, we’ve marked main as an extern function, and added an infinite loop to it. Extern tells the Rust compiler that this function follows the C calling convention. The details of what this does vary by target, and are beyond the scope of this post. The important effect of the change is that it’s now safe to use main as our reset vector. Adding the infinite loop ensures that main will never return. There’s no code for main to return to in this embedded environment.
 
-Language Items
+### Language Items
+
 The Rust compiler relies on certain functionality to be defined by the standard library. Unfortunately for us, we just disabled it. This means that we are responsible for providing these features.
 
 For now, the only language feature we’re responsible for is the panic handler. This is the function that gets called to display a message when our code panics. We will eventually want to pass these messages along to the user, but initially we will ignore them and hang the program.
