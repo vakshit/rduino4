@@ -124,14 +124,39 @@ Our program now contains the important data tables, as well as a `main` that can
 Accessing The Hardware
 Our first steps here will be some basic hardware initialization tasks. We’ll build accessors for the watchdog and for the System Integration Module, or SIM. The SIM handles clock gating as well as most other global configuration of the microcontroller. Once we have those in place, we’ll turn to the I/O functions necessary to turn on the LED.
 
+## Registers
+
+Read [here](http://www.mathcs.emory.edu/~cheung/Courses/255/Syllabus/2-C-adv-data/struct-pointer.html) about pointers and structs in C before moving ahead.
+
+Note that a register is nothing but a memory block. Remeber ESC101? Memory blocks can be simply interpreted as integers i.e. a 32 bit integer represents 32 bits of memory. Setting the register to 1 is equivalent to making that integer equal to 1.
+A struct is no different from array in C, just take it as named indexes, i.e. instead of `A[i]` which is actually `A + i*sizeof(int)` is instead represented as `A.i` but points to the same memory location. So if we have a series of 2 64 bit integers in C, I can represent them as:
+
+```C
+struct register_representation {
+    long long int register1;
+    long long int register2;
+}
+```
+
+Now if I already know that such a series of registers exist at a specific point in memory then I can simply assume that a struct exists there, since it is a mere representation. Suppose the manual says that the registers are located at 00-31 and 32-63 (regions of memory). In C we could do as:
+
+```C
+register_representation *ptr = 0x00;
+// Set the bits of register 1 to 10 and register 2 to 0;
+ptr->register1 = 3; // 10 in integer representation is 3
+ptr->register2 = 0;
+```
+
 ## Disabling the Watchdog
 
-The first bit of hardware setup we’ll do is disabling the watchdog. The watchdog’s control is done through a series of 12 16-bit registers at address `0x40052000`. This can be represented in Rust as a packed structure.
+The first bit of hardware setup we’ll do is disabling the watchdog. The watchdog’s control is done through a series of 12 16-bit registers at address `0x40052000`. This can be represented in Rust as a packed structure
 
 ```rust
 #[repr(C,packed)]
 pub struct Watchdog {
-    // Complete here
+    stctrlh: u16,
+    stctrll: u16,
+    // Complete the rest of the registers here.
 }
 ```
 
@@ -237,12 +262,7 @@ impl Port {
     }
 
     pub unsafe fn set_pin_mode(&mut self, p: usize, mut mode: u32) {
-        let mut pcr = core::ptr::read_volatile(&self.pcr[p]);
-        pcr &= 0xFFFFF8FF;
-        mode &= 0x00000007;
-        mode <<= 8;
-        pcr |= mode;
-        core::ptr::write_volatile(&mut self.pcr[p], pcr);
+        // Given the pin mode as a 32 bit value set the register bytes to the same value for the corresponding pin.
     }
 }
 ```
@@ -261,7 +281,7 @@ pub struct Pin {
 
 impl Port {
     pub unsafe fn pin(&mut self, p: usize) -> Pin {
-        // Complete
+        // Complete and return a pin struct
     }
 }
 ```
@@ -297,31 +317,32 @@ impl Port {
 impl Pin {
     pub fn make_gpio(self) -> Gpio {
         unsafe {
-            let port = &mut *self.port;
-            port.set_pin_mode(self.pin, 1);
-            Gpio::new(port.name(), self.pin)
+            // Set pin mode to 1 to enable gpio mode.
+            // Consume the pin into a gpio struct i.e. instantitate a gpio struct using the new function below.
         }
     }
 }
 
 impl Gpio {
-    pub unsafe fn new(port: PortName, pin: usize) -> Gpio {
+    pub unsafe fn new(port: PortName, pin: usize) -> Gpio {-++++
         let gpio = match port {
             PortName::C => 0x43FE1000 as *mut GpioBitband
         };
 
-        Gpio { gpio, pin }
+        // Initialize and return a gpio struct.
     }
 
     pub fn output(&mut self) {
         unsafe {
-            core::ptr::write_volatile(&mut (*self.gpio).pddr[self.pin], 1);
+            //  WRITE THE  XX register of GPIO to 1 to enable this pin as output type.
+            // See section 49.2 of the teensy manual to find out what is XX.
         }
     }
 
     pub fn high(&mut self) {
         unsafe {
-            core::ptr::write_volatile(&mut (*self.gpio).psor[self.pin], 1);
+           //  WRITE THE  XX register of GPIO to 1 to set this pin as high.
+           // See section 49.2 of the teensy manual to find out what is XX. Please not that it is not PDOR, since PDOR is never directly written.
         }
     }
 }
@@ -338,4 +359,7 @@ We now have all the pieces for our first program. Going back to the beginning, o
 - disable the watchdog
 - turn on the clock gate for Port C
 - grab pin 5 from that port, and make it a GPIO
-- set that GPIO high to light the LED
+- set that GPIO as output and then high to light the LED
+- Can you make the led blink periodically?
+
+You are now suppossed to complete main.rs.
