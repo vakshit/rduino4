@@ -10,7 +10,15 @@ Unlike with typical desktop or server applications, embedded programs do not hav
 
 Memory mapping is assigning a special memory address which, when read from or written to, interacts with a hardware device instead of RAM. For example, address `0x4006A007` is the UART Data Register _(see below)_. Writing a byte to this address will cause that data to be sent across the serial port.
 
-Writing to arbitrary memory addresses requires unsafe Rust. One of our goals through this series will be to use Rust’s language features to create safe interfaces for these unsafe memory accesses. If you would have read chapter 19 by now, unsafe should be fammiliar to you. Please refer to the resources for understanding about some embedded programming terms. **Note that we only need a basic idea about them and not the full knowledge**.
+Writing to arbitrary memory addresses requires unsafe Rust. One of our goals through this series will be to use Rust’s language features to create safe interfaces for these unsafe memory accesses. If you would have read chapter 19 by now, unsafe should be fammiliar to you. Please refer to the resources for understanding about some embedded programming terms. **Note that we only need a basic idea about them and not the full knowledge**.`
+
+| Topic                           | Resource                                                                                                                       | Comments |
+| ------------------------------- | ------------------------------------------------------------------------------------------------------------------------------ | -------- |
+| Interrupts                      | https://en.wikipedia.org/wiki/Interrupt                                                                                        |          |
+| Memory-Mapped I/O               | https://en.wikipedia.org/wiki/Memory-mapped_I/O                                                                                |          |
+| SPI, UART, RS232, USB, I2C, TTL | https://electronics.stackexchange.com/questions/37814/usart-uart-rs232-usb-spi-i2c-ttl-etc-what-are-all-of-these-and-how-do-th |          |
+| Registers                       | https://en.wikipedia.org/wiki/Processor_register                                                                               |          |
+| WatchDog                        | https://os.mbed.com/cookbook/WatchDog-Timer                                                                                    |          |
 
 ## Development Environment
 
@@ -147,13 +155,7 @@ impl Watchdog {
 
     pub fn disable(&mut self) {
         unsafe {
-            core::ptr::write_volatile(&mut self.unlock, 0xC520);
-            core::ptr::write_volatile(&mut self.unlock, 0xD928);
-            __NOP();
-            __NOP();
-            let mut ctrl = core::ptr::read_volatile(&self.stctrlh);
-            ctrl &= !(0x00000001);
-            core::ptr::write_volatile(&mut self.stctrlh, ctrl);
+            // disable the watchodg
         }
     }
 }
