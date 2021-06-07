@@ -111,7 +111,7 @@ pub static _VECTORS: [unsafe extern fn(); 2] = [
 // pub static _FLASHCONFIG:
 ```
 
-We will use the link_section attributes in a minute to control where in the flash memory these arrays end up. The no_mangle attribute is needed to tell Rust that these arrays have special meaning at link time. Without it, the data will not appear in our final executable.
+We will use the link_section attributes to control where in the flash memory these arrays end up. The no_mangle attribute is needed to tell Rust that these arrays have special meaning at link time. Without it, the data will not appear in our final executable.
 
 \_stack_top is not really a function. It is a memory address representing the initial stack pointer. We pretend that it is a function so that our \_VECTORS array is easier to write. Fortunately calling it from our own code is unsafe, so we can be pretty sure that only the hardware will read these values.
 
@@ -126,7 +126,7 @@ Our first steps here will be some basic hardware initialization tasks. We’ll b
 
 ### Registers
 
-Read [here](http://www.mathcs.emory.edu/~cheung/Courses/255/Syllabus/2-C-adv-data/struct-pointer.html) about pointers and structs in C before moving ahead.
+Read [here](http://www.mathcs.emory.edu/~cheung/Courses/255/Syllabus/2-C-adv-data/struct.html) and [here](http://www.mathcs.emory.edu/~cheung/Courses/255/Syllabus/2-C-adv-data/struct-pointer.html) about pointers and structs in C before moving ahead.
 
 Note that a register is nothing but a memory block. Remeber ESC101? Memory blocks can be simply interpreted as integers i.e. a 32 bit integer represents 32 bits of memory. Setting the register to 1 is equivalent to making that integer equal to 1.
 A struct is no different from array in C, just take it as named indexes, i.e. instead of `A[i]` which is actually `A + i*sizeof(int)` is instead represented as `A.i` but points to the same memory location. So if we have a series of 2 64 bit integers in C, I can represent them as:

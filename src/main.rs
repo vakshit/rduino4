@@ -10,7 +10,7 @@ mod port;
 mod sim;
 mod watchdog;
 
-extern "C" fn main() {
+pub extern "C" fn main() {
     // Complete main function here
     loop {}
 }
