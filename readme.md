@@ -227,7 +227,7 @@ pub enum Clock {
 pub struct Sim {
     // Complete code here
     // See section 12.2 of the teensy manual for the register sizes and memory locations and do similar to the watchdog struct.
-    // Note that there are some empty bits between some registers and they are not continous, how do we resolve that ? Padding, eh ?
+    // Note that there are some empty bits between some registers and they are not continous, how do we resolve that ? Padding, eh ? Since the size of padding can be more than u64, think of a neat way to give say, 512 bit of padding.
 }
 
 impl Sim {
