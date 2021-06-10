@@ -75,7 +75,7 @@ loop{}
 
 The first line enables the use of intrinsics, and is the reason we need nightly Rust. The next two lines actually disable features of the Rust environment - the standard library, and the main wrapper. The Rust standard library relies on a full operating system, and can’t typically be used for embedded development. Instead, we will have access to libcore, which is the subset of std that is available without an OS. Similarly, the main wrapper is used for application setup tasks that aren’t necessary in embedded programs.
 
-Lastly, we’ve marked main as an extern function, and added an infinite loop to it. Extern tells the Rust compiler that this function follows the C calling convention. The details of what this does vary by target, and are beyond the scope of this post. The important effect of the change is that it’s now safe to use main as our reset vector. Adding the infinite loop ensures that main will never return. There’s no code for main to return to in this embedded environment.
+Lastly, we’ve marked main as an extern function, and added an infinite loop to it. Extern tells the Rust compiler that this function follows the C calling convention. The details of what this does vary by target, and are beyond the scope of this assignment and I would encourage you to explore on your own. The important effect of the change is that it’s now safe to use main as our reset vector. Adding the infinite loop ensures that main will never return. There’s no code for main to return to in this embedded environment.
 
 ### Language Items
 
@@ -85,7 +85,7 @@ For now, the only language feature we’re responsible for is the panic handler.
 
 ```rust
 #[panic_handler]
-fn teensy_panic(\_pi: &core::panic::PanicInfo) -> ! {
+fn teensy_panic(_pi: &core::panic::PanicInfo) -> ! {
 // Complete code here
 }
 ```
@@ -118,11 +118,10 @@ We will use the link_section attributes to control where in the flash memory the
 
 ## Compiling and Linking
 
-Our program now contains the important data tables, as well as a `main` that can be called by the microcontroller. We will now turn our attention to building the project for the Teensy.
+Our program now contains the important data tables, as well as a `main` that can be called by the microcontroller. We will now turn our attention to building the project for the Teensy. We still need to link the compiler to teensy arch, but that is for a later assigment.
 
 ## Accessing the hardware
 
-Accessing The Hardware
 Our first steps here will be some basic hardware initialization tasks. We’ll build accessors for the watchdog and for the System Integration Module, or SIM. The SIM handles clock gating as well as most other global configuration of the microcontroller. Once we have those in place, we’ll turn to the I/O functions necessary to turn on the LED.
 
 ### Registers
@@ -212,7 +211,7 @@ This disable process shows why we must have only one mutable reference to the wa
 
 The other piece of hardware involved in the microcontroller setup is the System Integration Module. We’ll use this to enable the appropriate clock gate to enable our I/O port. Just like the watchdog, the SIM is controlled through a block of memory, which also will be represent as a struct. It has the same basic memory safety rules as the watchdog does, and for now has no extra memory-safety invariants.
 
-There is a potential correctness issue involved with the SIM - it’s possible to use a mutable reference to the SIM to disable a hardware function that another section of code relies on. We can design an API that keeps better track of which functional units are needed, but we will save that for a future post. For now, we’ll just have to trust ourselves.
+There is a potential correctness issue involved with the SIM - it’s possible to use a mutable reference to the SIM to disable a hardware function that another section of code relies on. We can design an API that keeps better track of which functional units are needed, but we will save that for a future assignment. For now, we’ll just have to trust ourselves.
 
 The complete code for src/sim.rs is here:
 
@@ -379,4 +378,4 @@ We now have all the pieces for our first program. Going back to the beginning, o
 - set that GPIO as output and then high to light the LED
 - Can you make the led blink periodically?
 
-You are now suppossed to complete main.rs to do the above tasks.
+You are now suppossed to complete main.rs to do the above tasks. Please note that every line of code should be commented with proper explanation otherwise the code would not be accepted.
