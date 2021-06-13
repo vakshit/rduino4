@@ -375,7 +375,7 @@ We now have all the pieces for our first program. Going back to the beginning, o
 - disable the watchdog
 - turn on the clock gate for Port C
 - grab pin 5 from that port, and make it a GPIO
-- set that GPIO as output and then high to light the LED
+- set that GPIO as output and then high to light the LED [ Devansh ]
 - Can you make the led blink periodically?
 
 You are now suppossed to complete main.rs to do the above tasks. Please note that every line of code should be commented with proper explanation otherwise the code would not be accepted.
