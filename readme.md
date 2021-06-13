@@ -372,10 +372,10 @@ Converting a Pin into a Gpio consumes the Pin. This prevents having more than on
 
 We now have all the pieces for our first program. Going back to the beginning, our application will do the following:
 
-- disable the watchdog[Akshit]
-- turn on the clock gate for Port C[Samarth]
-- grab pin 5 from that port, and make it a GPIO[Satyendra]
+- disable the watchdog [ Akshit ]
+- turn on the clock gate for Port C [ Samarth ]
+- grab pin 5 from that port, and make it a GPIO [ Satendra ]
 - set that GPIO as output and then high to light the LED [ Devansh ]
-- Can you make the led blink periodically?[Sanmati]
+- Can you make the led blink periodically? [ Sanmati ]
 
 You are now suppossed to complete main.rs to do the above tasks. Please note that every line of code should be commented with proper explanation otherwise the code would not be accepted.
