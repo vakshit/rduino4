@@ -93,31 +93,24 @@ pub enum PortName {
 
 #[repr(C,packed)]
 pub struct Port {
-    pcr: [u32; 32],
-    gpclr: u32,
-    gpchr: u32,
-    reserved_0: [u8; 24],
+    pcr: [u32; 32],   gpclr: u32,
+    gpchr: u32,    reserved_0: [u8; 24],
     isfr: u32,
 }
 
 pub struct Pin {
-    port: *mut Port,
-    pin: usize
+    port: *mut Port,   pin: usize
 }
 
 #[repr(C,packed)]
 struct GpioBitband {
-    pdor: [u32; 32],
-    psor: [u32; 32],
-    pcor: [u32; 32],
-    ptor: [u32; 32],
-    pdir: [u32; 32],
-    pddr: [u32; 32]
+    pdor: [u32; 32],   psor: [u32; 32],
+    pcor: [u32; 32],   ptor: [u32; 32],
+    pdir: [u32; 32],   pddr: [u32; 32]
 }
 
 pub struct Gpio {
-    gpio: *mut GpioBitband,
-    pin: usize
+    gpio: *mut GpioBitband,   pin: usize
 }
 
 impl Port {
