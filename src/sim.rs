@@ -22,14 +22,16 @@ pub struct Sim {
 
 impl Sim {
     pub unsafe fn new() -> &'static mut Sim {
-        // Complete code here (similar to watchdog), see memory location from section 12.2
+        &mut *(0x40047000 as *mut Sim)
     }
 
     pub fn enable_clock(&mut self, clock: Clock) {
         unsafe {
             match clock {
                 Clock::PortC => {
-                    // Use the teensy manual to find out which register controls Port C. Then implement this function to enable port C. Scroll through section 12.2 to find which bit of which register needs to be changed to enable clock gate to Port C. Note that all other bits of that register must remain unchanged.
+                    let mut scgc = core::ptr::read_volatile(&self.scgc5);
+                    scgc |= 0x00000800;
+                    core::ptr::write_volatile(&mut self.scgc5, scgc);
                 }
             }
         }
