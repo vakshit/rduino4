@@ -3,7 +3,6 @@ use core::arch::arm::__nop;
 
 #[repr(C, packed)]
 pub struct Watchdog {
-    // Complete the rest of the registers here using section 23.7 of the manual.
     stctrlh: u16,    stctrll: u16,
     tovalh: u16,   tovall: u16,
     winh: u16,   winl: u16,
