@@ -7,9 +7,6 @@ pub enum Clock {
 
 #[repr(C, packed)]
 pub struct Sim {
-    // Complete code here
-// See section 12.2 of the teensy manual for the register sizes and memory locations and do similar to the watchdog struct.
-// Note that there are some empty bits between some registers and they are not continous, how do we resolve that ? Padding, eh ?
     sopt1: u32,  sopt1cfg: u32,
     empty1: [u32,1023],  
     sopt2: u32,  empty2: u32,
