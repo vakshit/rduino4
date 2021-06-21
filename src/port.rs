@@ -11,7 +11,7 @@ pub struct Port {
     pcr: [u32; 32],
     gpclr: u32,
     gpchr: u32,
-    dummy: [u8; 24], // how to decide that its 1 byte long..??
+    dummy: [u8; 24], // how to decide that its 1 byte long..?? [ 1 Byte = 8 Bits, if this clears the doubt ]
     isfr: u32,
     
 }
