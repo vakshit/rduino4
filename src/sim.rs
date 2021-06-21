@@ -12,14 +12,14 @@ pub struct Sim {
     // Note that there are some empty bits between some registers and they are not continous, how do we resolve that ? Padding, eh ?
     sopt1: u32,
     sopt1cfg: u32,
-    dummy0: [u32; 1023], //padding
+    dummy0: [u32; 1024], //padding
     sopt2: u32,
     dummy1: u32, //padding
     sopt4: u32,
     sopt5: u32,
     dummy2: u32, //padding
     sopt7: u32,
-    dummy3: [char; 2], //padding
+    dummy3: [u8; 2], //padding
     sdid: u32,
     scgc1:u32,
     sgcg2:u32,
