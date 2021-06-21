@@ -32,6 +32,7 @@ impl Port {
         let mut pcr = core::ptr::read_volatile(&self.pcr[p]);
         pcr &= 0xFFFFF8FF;
         mode <<=8;
+        pcr|=mode;
         core::ptr::write_volatile(&mut self.pcr[p], pcr);
     }
 }
@@ -101,6 +102,9 @@ impl Gpio {
         unsafe {
             //  WRITE THE  XX register of GPIO to 1 to enable this pin as output type.
             // See section 49.2 of the teensy manual to find out what is XX.
+           let mut ctrl_output = core::ptr::read_volatile(&self.pdor);
+           core::ptr::write_volatile(&mut self.pdor, ctrl_output |(1<<31));
+
         }
     }
 
@@ -108,6 +112,8 @@ impl Gpio {
         unsafe {
            //  WRITE THE  XX register of GPIO to 1 to set this pin as high.
            // See section 49.2 of the teensy manual to find out what is XX. Please not that it is not PDOR, since PDOR is never directly written.
+        let mut ctrl_disable = core::ptr::read_volatile(&self.psor);
+        core::ptr::write_volatile(&mut self.psor, ctrl_disable | (1<<31) );
         }
     }
 }
