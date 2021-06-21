@@ -2,6 +2,8 @@ use core;
 
 #[derive(Clone,Copy)]
 pub enum PortName {
+    // We will control all the important features of portC.
+    // So we will convert a pin of PortC into a GPIO pin.
     C
 }
 
