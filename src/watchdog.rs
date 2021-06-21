@@ -15,7 +15,6 @@ pub struct Watchdog {
     tmroutl: u16,
     rstcnt: u16,
     presc: u16,
-
     // Complete the rest of the registers here using section 23.7 of the manual.
 }
 
@@ -41,10 +40,6 @@ impl Watchdog {
             __nop();
             let mut ctrl_disable = core::ptr::read_volatile(&self.stctrlh);
             core::ptr::write_volatile(&mut self.stctrlh, ctrl_disable & 0 );
-
-
-
-
         }
     }
 }
