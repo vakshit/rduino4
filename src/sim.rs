@@ -2,6 +2,8 @@ use core;
 
 #[derive(Clone, Copy)]
 pub enum Clock {
+    // We have a enum which displays the clock.
+    // We consider only PortC in our assignment
     PortC,
 }
 
