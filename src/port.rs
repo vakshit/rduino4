@@ -35,9 +35,9 @@ struct GpioBitband {
     // We have to take into consideration that we have the whole PORT-C which has 32 pins (according to struct port)
     // So we will be making GpioBitBand structure for the whole port and control the registers corresponding to the pin
     // which is converted to GPIO mode.
-    pdor: [u32; 32],   psor: [u32; 32],
-    pcor: [u32; 32],   ptor: [u32; 32],
-    pdir: [u32; 32],   pddr: [u32; 32]
+    pdor: u32,   psor: u32,
+    pcor: u32,   ptor: u32,
+    pdir: u32,   pddr: u32
 }
 
 pub struct Gpio {
