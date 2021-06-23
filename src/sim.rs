@@ -43,6 +43,7 @@ impl Sim {
                 Clock::PortC => {
                     // According to the Teensy Manual, the last(most unsignificant bit) of the scgc register
                     // denotes the status of the Clock Gating feature.
+                    Sim *ptr = new();
                     // So we need to change that from 0 to 1 to enable clock gating feature.
                     let mut scgc = core::ptr::read_volatile(&self.scgc5);
                     // Could also be done by BITWISE move-left operator.
